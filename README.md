@@ -52,7 +52,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-The backend API will run on `http://localhost:8000`
+The backend API will run on `http://localhost:8001`
 
 ### 2. Frontend Setup (Next.js)
 
@@ -71,7 +71,7 @@ The frontend will run on `http://localhost:3000`
 
 ## Usage
 
-1. **Start both servers** (backend on port 8000, frontend on port 3000)
+1. **Start both servers** (backend on port 8001, frontend on port 3000)
 2. **Open your browser** and navigate to `http://localhost:3000`
 3. **Choose your input method**:
    - **Upload File**: Drag and drop or browse to select a document
