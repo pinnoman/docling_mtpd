@@ -78,7 +78,7 @@ npm run dev
 ### Backend won't start
 - Make sure Python 3.9+ is installed: `python --version`
 - Try: `pip install --upgrade pip`
-- Check if port 8000 is available
+- Check if port 8001 is available
 
 ### Frontend won't start
 - Make sure Node.js 18+ is installed: `node --version`
@@ -89,7 +89,7 @@ npm run dev
 ### Conversion fails
 - Make sure both backend AND frontend are running
 - Check browser console for errors (F12)
-- Verify backend is accessible at `http://localhost:8000/health`
+- Verify backend is accessible at `http://localhost:8001/health`
 
 ### CORS errors
 - Make sure you're accessing the frontend at `http://localhost:3000` (not 127.0.0.1)

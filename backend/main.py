@@ -1,12 +1,16 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from docling.document_converter import DocumentConverter
+from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions
 import tempfile
 import os
+import json
 import logging
 import traceback
 from pathlib import Path
+import torch
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -23,8 +27,40 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize the document converter
-converter = DocumentConverter()
+# Detect CUDA availability and configure device
+def get_device():
+    """Detect if CUDA is available and return appropriate device."""
+    if torch.cuda.is_available():
+        device = "cuda"
+        logger.info(f"CUDA is available! Using GPU: {torch.cuda.get_device_name(0)}")
+        logger.info(f"CUDA Version: {torch.version.cuda}")
+        logger.info(f"Number of GPUs: {torch.cuda.device_count()}")
+    else:
+        device = "cpu"
+        logger.info("CUDA not available. Using CPU for processing.")
+    return device
+
+# Get device
+device = get_device()
+
+# Configure pipeline options for GPU acceleration
+pipeline_options = PdfPipelineOptions()
+pipeline_options.do_ocr = True
+pipeline_options.do_table_structure = True
+
+# Configure format options with device
+format_options = {
+    InputFormat.PDF: PdfFormatOption(
+        pipeline_options=pipeline_options
+    )
+}
+
+# Initialize the document converter with GPU support
+converter = DocumentConverter(
+    format_options=format_options
+)
+
+logger.info(f"DocumentConverter initialized with device: {device}")
 
 @app.get("/")
 async def root():
@@ -32,7 +68,19 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    """Health check endpoint with device information."""
+    health_info = {
+        "status": "healthy",
+        "device": device,
+        "cuda_available": torch.cuda.is_available()
+    }
+    
+    if torch.cuda.is_available():
+        health_info["gpu_name"] = torch.cuda.get_device_name(0)
+        health_info["gpu_count"] = torch.cuda.device_count()
+        health_info["cuda_version"] = torch.version.cuda
+    
+    return health_info
 
 @app.post("/convert")
 async def convert_document(
@@ -73,7 +121,7 @@ async def convert_document(
             elif output_format == "html":
                 output = result.document.export_to_html()
             elif output_format == "json":
-                output = result.document.export_to_dict()
+                output = json.dumps(result.document.export_to_dict(), indent=2)
             else:
                 raise HTTPException(
                     status_code=400,
@@ -114,7 +162,7 @@ async def convert_from_url(url: str, output_format: str = "markdown"):
         elif output_format == "html":
             output = result.document.export_to_html()
         elif output_format == "json":
-            output = result.document.export_to_dict()
+            output = json.dumps(result.document.export_to_dict(), indent=2)
         else:
             raise HTTPException(
                 status_code=400,

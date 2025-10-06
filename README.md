@@ -155,11 +155,28 @@ python main.py   # Start with auto-reload
 
 The application uses the following default ports:
 - Frontend: `3000`
-- Backend: `8000`
+- Backend: `8001`
 
 To change these, modify:
-- Frontend API calls in components (currently hardcoded to `http://localhost:8000`)
+- Frontend API calls in components (currently hardcoded to `http://localhost:8001`)
 - Backend port in `main.py` (uvicorn.run parameters)
+
+### GPU Acceleration (CUDA)
+
+The backend automatically detects and uses CUDA-enabled GPUs when available:
+
+- **With CUDA**: Significantly faster processing, especially for large PDFs and OCR tasks
+- **Without CUDA**: Falls back to CPU processing automatically
+
+**To check if GPU is being used:**
+1. Start the backend server
+2. Check the startup logs for "CUDA is available!" message
+3. Visit `http://localhost:8001/health` to see device information
+
+**Requirements for GPU acceleration:**
+- NVIDIA GPU with CUDA support
+- CUDA Toolkit installed
+- PyTorch with CUDA support (`pip install torch --index-url https://download.pytorch.org/whl/cu118`)
 
 ## Troubleshooting
 
@@ -168,7 +185,7 @@ To change these, modify:
 - **Port already in use**: Change the port in `main.py`
 
 ### Frontend Issues
-- **API connection errors**: Ensure the backend is running on port 8000
+- **API connection errors**: Ensure the backend is running on port 8001
 - **CORS errors**: Check CORS configuration in `backend/main.py`
 
 ### Conversion Issues
