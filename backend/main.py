@@ -1,9 +1,10 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
+from typing import List
 import tempfile
 import os
 import json
@@ -182,6 +183,90 @@ async def convert_from_url(url: str, output_format: str = "markdown"):
         logger.error(f"Error converting document from URL: {str(e)}")
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Conversion error: {str(e)}")
+
+@app.post("/convert-batch")
+async def convert_batch_documents(
+    files: List[UploadFile] = File(...),
+    output_format: str = Form("markdown")
+):
+    """
+    Convert multiple uploaded documents to specified format.
+    Returns results for all files, including any errors.
+    """
+    if not files:
+        raise HTTPException(status_code=400, detail="No files provided")
+    
+    results = []
+    allowed_extensions = {
+        '.pdf', '.docx', '.pptx', '.xlsx', '.html', 
+        '.png', '.jpg', '.jpeg', '.tiff', '.wav', '.mp3'
+    }
+    
+    for file in files:
+        file_result = {
+            "filename": file.filename,
+            "success": False,
+            "format": output_format,
+            "content": None,
+            "error": None
+        }
+        
+        try:
+            # Validate file extension
+            file_ext = Path(file.filename).suffix.lower()
+            
+            if file_ext not in allowed_extensions:
+                file_result["error"] = f"Unsupported file type: {file_ext}"
+                results.append(file_result)
+                continue
+            
+            # Save uploaded file to temporary location
+            with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
+                content = await file.read()
+                tmp_file.write(content)
+                tmp_file_path = tmp_file.name
+            
+            try:
+                # Convert the document
+                result = converter.convert(tmp_file_path)
+                
+                # Export based on requested format
+                if output_format == "markdown":
+                    output = result.document.export_to_markdown()
+                elif output_format == "html":
+                    output = result.document.export_to_html()
+                elif output_format == "json":
+                    output = json.dumps(result.document.export_to_dict(), indent=2)
+                else:
+                    file_result["error"] = f"Unsupported output format: {output_format}"
+                    results.append(file_result)
+                    continue
+                
+                file_result["success"] = True
+                file_result["content"] = output
+                
+            finally:
+                # Clean up temporary file
+                if os.path.exists(tmp_file_path):
+                    os.unlink(tmp_file_path)
+        
+        except Exception as e:
+            logger.error(f"Error converting {file.filename}: {str(e)}")
+            file_result["error"] = str(e)
+        
+        results.append(file_result)
+    
+    # Calculate summary statistics
+    successful = sum(1 for r in results if r["success"])
+    failed = len(results) - successful
+    
+    return JSONResponse(content={
+        "success": True,
+        "total": len(results),
+        "successful": successful,
+        "failed": failed,
+        "results": results
+    })
 
 if __name__ == "__main__":
     import uvicorn

@@ -6,10 +6,11 @@ A beautiful and intuitive web interface for [Docling](https://github.com/docling
 
 - 🎨 **Beautiful UI** - Modern, responsive interface built with Next.js, React, TypeScript, shadcn/ui, and Tailwind CSS
 - 📤 **File Upload** - Drag-and-drop or browse to upload documents
+- 📦 **Batch Conversion** - Convert multiple documents at once with detailed results
 - 🔗 **URL Support** - Convert documents directly from URLs
 - 🔄 **Multiple Formats** - Export to Markdown, HTML, or JSON
 - 👁️ **Live Preview** - View converted documents with syntax highlighting
-- 📋 **Copy & Download** - Easy export options for converted content
+- 📋 **Copy & Download** - Easy export options for converted content (including bulk download)
 - 🌓 **Dark Mode** - Full dark mode support
 
 ## Supported Document Types
@@ -75,11 +76,22 @@ The frontend will run on `http://localhost:3000`
 2. **Open your browser** and navigate to `http://localhost:3000`
 3. **Choose your input method**:
    - **Upload File**: Drag and drop or browse to select a document
+   - **Batch Mode**: Toggle batch mode to convert multiple files at once
    - **From URL**: Enter a direct link to a document
 4. **Select output format**: Choose between Markdown, HTML, or JSON
 5. **Click Convert**: Wait for the conversion to complete
-6. **View results**: Preview the converted document or view the raw output
-7. **Export**: Copy to clipboard or download the converted file
+6. **View results**: Preview the converted document(s) or view the raw output
+7. **Export**: Copy to clipboard or download the converted file(s)
+
+### Batch Conversion
+
+To convert multiple documents at once:
+1. Toggle **Batch Mode** switch in the Upload File tab
+2. Select or drag-and-drop multiple files
+3. Review the list of selected files (you can remove individual files)
+4. Click **Convert** to process all files
+5. View individual results with success/failure indicators
+6. Download all successful conversions at once or individually
 
 ## Example URLs to Try
 
@@ -99,11 +111,12 @@ docling1/
 │   │   ├── layout.tsx      # Root layout
 │   │   └── globals.css     # Global styles
 │   ├── components/         # React components
-│   │   ├── DocumentConverter.tsx  # Main converter component
-│   │   ├── FileUpload.tsx         # File upload component
-│   │   ├── UrlInput.tsx           # URL input component
-│   │   ├── ConversionResult.tsx   # Result display component
-│   │   └── ui/                    # shadcn/ui components
+│   │   ├── DocumentConverter.tsx       # Main converter component
+│   │   ├── FileUpload.tsx              # File upload component (single & batch)
+│   │   ├── UrlInput.tsx                # URL input component
+│   │   ├── ConversionResult.tsx        # Single result display component
+│   │   ├── BatchConversionResult.tsx   # Batch results display component
+│   │   └── ui/                         # shadcn/ui components
 │   ├── lib/                # Utility functions
 │   └── package.json        # Node.js dependencies
 └── README.md               # This file
@@ -114,11 +127,16 @@ docling1/
 ### Backend (FastAPI)
 
 - `GET /` - Health check
-- `GET /health` - Health status
-- `POST /convert` - Convert uploaded file
+- `GET /health` - Health status with GPU information
+- `POST /convert` - Convert single uploaded file
   - Body: `multipart/form-data` with `file` and `output_format`
+  - Returns: Single conversion result
+- `POST /convert-batch` - Convert multiple uploaded files
+  - Body: `multipart/form-data` with multiple `files` and `output_format`
+  - Returns: Batch results with success/failure status for each file
 - `POST /convert-url` - Convert document from URL
   - Query params: `url`, `output_format`
+  - Returns: Single conversion result
 
 ## Technologies Used
 
@@ -126,7 +144,8 @@ docling1/
 - **Next.js 15** - React framework
 - **TypeScript** - Type safety
 - **Tailwind CSS** - Styling
-- **shadcn/ui** - UI components
+- **shadcn/ui** - UI components (including custom Switch and Label)
+- **Radix UI** - Accessible component primitives
 - **Lucide React** - Icons
 - **React Markdown** - Markdown rendering
 
